@@ -1,0 +1,134 @@
+:root {
+  --bg:#f6f8fb;
+  --card:#fff;
+  --muted:#6b7280;
+  --accent:#023880ff;
+  --content-max: 1440px; /* wider content on large screens */
+}
+
+* { box-sizing: border-box; }
+html, body, #root { height: 100%; }
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  background: var(--bg);
+  color: #111827;
+}
+
+/* ---------- App shell & top bar ---------- */
+.app-shell { display: flex; flex-direction: column; min-height: 100%; }
+.topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0.75rem 1rem; background: var(--card);
+  box-shadow: 0 1px 4px rgba(10, 109, 51, 0.06);
+  position: sticky; top: 0; z-index: 10;
+}
+.brand { font-weight: 700; display: flex; align-items: center; gap: 0.75rem; }
+.app-title { font-size: 1.5rem; font-weight: 600; }
+.right-side { display: flex; align-items: center; gap: 1rem; }
+.title-section { display: flex; align-items: center; }
+.boat-name { font-size: 2rem; font-weight: 600; color: #0f4a9cff; white-space: nowrap; }
+.actions { display: flex; gap: .5rem; align-items: center; }
+.add-btn, .hamburger { border: none; background: var(--accent); color: #fff; border-radius: .5rem; padding: .4rem .6rem; cursor: pointer; }
+.hamburger { background:#111827; }
+.menu { position: relative; }
+.menu-dropdown {
+  position: absolute; right: 0; top: 120%; background: var(--card);
+  border: 1px solid #e5e7eb; border-radius: .5rem; box-shadow: 0 10px 30px rgba(0,0,0,.12);
+  min-width: 220px;
+}
+.menu-item { padding: .6rem .8rem; cursor: pointer; }
+.menu-item:hover { background: #f3f4f6; }
+.menu-item.selected { background: #e5f0ff; }
+.menu-title { font-weight: 600; }
+.menu-sub { font-size: 1rem; color: var(--muted); }
+.muted { color: var(--muted); }
+
+/* ---------- Responsive content grid ---------- */
+.content {
+  width: min(var(--content-max), 100% - 2rem);
+  margin: 1rem auto 2rem;
+  display: grid; gap: 1rem; align-items: start;
+  grid-template-columns: 1.15fr 1fr; /* left | right */
+}
+
+/* wider screens breathe more */
+@media (min-width: 1600px) {
+  :root { --content-max: 1600px; }
+  .content { grid-template-columns: 1.3fr 1fr; gap: 1.25rem; }
+}
+
+/* equal columns around 1200px */
+@media (max-width: 1200px) {
+  .content { grid-template-columns: 1fr 1fr; }
+}
+
+/* stack on tablets/phones */
+@media (max-width: 900px) {
+  .content { grid-template-columns: 1fr; }
+}
+
+/* column helpers */
+.left, .right { min-width: 0; display: grid; gap: 1rem; }
+.right { position: sticky; top: 64px; height: fit-content; }
+
+/* ---------- Cards ---------- */
+.card {
+  background: var(--card); border-radius: 2rem; padding: 1rem;
+  box-shadow: 0 2px 16px rgba(0,0,0,.06);
+  border: 1px solid #e5e7eb;
+  overflow: visible;
+}
+.chart-card { min-height: 520px; }
+.chart-wrap { width: 100%; height: clamp(320px, 42vh, 560px); }
+
+/* ---------- Form grid ---------- */
+.grid { display: grid; gap: 1rem; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (max-width: 640px) { .grid { grid-template-columns: 1fr; } }
+
+label span { display: block; font-size: .85rem; color: var(--muted); margin-bottom: .25rem; }
+input, select {
+  width: 100%; padding: .55rem .6rem; border: 1px solid #e5e7eb; border-radius: .5rem; background: #fff;
+  font-size: 14px; height: 38px; outline: none;
+}
+.row { margin-top: 1rem; display: flex; gap: .7rem; flex-wrap: wrap; }
+button {
+  background: var(--accent); color: #fff; border: none;
+  padding: .55rem .8rem; border-radius: .5rem; cursor: pointer; font-size: 18px;
+}
+button:disabled { opacity: .6; cursor: not-allowed; }
+
+/* ---------- Table: scroll inside card, sticky header ---------- */
+.table-wrap {
+  max-height: 420px; /* make list long but contained */
+  overflow: auto; border: 1px solid #eef2f7; border-radius: .5rem;
+}
+table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+th, td {
+  border-bottom: 1px solid #e5e7eb; padding: .5rem .6rem; text-align: center; font-size: .9rem;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+thead th {
+  position: sticky; top: 0; background: var(--card); z-index: 1;
+}
+
+/* ---------- Recharts tweaks ---------- */
+.recharts-wrapper, .recharts-surface { overflow: visible; }
+
+/* --------------- Results box ------- */
+.result-box {
+  margin-top: 1.25rem;        /* more breathing room under the buttons */
+  background: #f9fbfa;        /* subtle background (light grey) */
+  padding: 1rem;
+  border-radius: .75rem;
+  border: 1px solid #21884c;  /* thin border */
+}
+
+.result-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: .5rem;
+}
+
+.result-row:last-child { margin-bottom: 0; }
