@@ -2,6 +2,23 @@
 import { useState } from "react";
 import { calculateEmissions } from "../lib/calc";
 
+function InfoTooltip({ text }) {
+  return (
+    <span
+      style={{
+        marginLeft: 6,
+        cursor: "help",
+        color: "#6b7280",
+        fontSize: 13,
+        position: "relative",
+      }}
+      title={text} // native browser tooltip (simple & clean)
+    >
+      ⓘ
+    </span>
+  );
+}
+
 export default function TripForm({ boat, onSaveTrip }) {
   const [inputs, setInputs] = useState({
     fuel_L: "",
@@ -109,7 +126,9 @@ export default function TripForm({ boat, onSaveTrip }) {
         </label>
 
           <label>
-          <span>Coolant (L)</span>
+          <span>Coolant (L)
+            <InfoTooltip text="Lubricant is normally replenished periodically rather than per trip. Enter the estimated amount attributable to this trip"/>
+          </span>
           <input
             type="number"
             name="coolant_L"
@@ -123,7 +142,9 @@ export default function TripForm({ boat, onSaveTrip }) {
         </label>
 
       <label>
-          <span>Lubricant (L)</span>
+          <span>Lubricant (L)
+              <InfoTooltip text="Coolant additions occur intermittently and not necessarily per trip. Enter the estimated amount allocated to this trip." />
+          </span>
           <input
             type="number"
             name="lube_L"
