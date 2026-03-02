@@ -2,6 +2,15 @@
 import { useState } from "react";
 import { calculateEmissions } from "../lib/calc";
 
+/** 5 common Iceland fisheries species (practical defaults for the app) */
+const SPECIES_OPTIONS = [
+  { id: "cod", label: "Cod" },
+  { id: "haddock", label: "Haddock" },
+  { id: "saithe", label: "Saithe" },
+  { id: "golden_redfish", label: "Golden redfish" },
+  { id: "herring", label: "Herring" },
+];
+
 function InfoTooltip({ text }) {
   return (
     <span
@@ -10,9 +19,9 @@ function InfoTooltip({ text }) {
         cursor: "help",
         color: "#6b7280",
         fontSize: 13,
-        position: "relative",
+        lineHeight: "1",
       }}
-      title={text} // native browser tooltip (simple & clean)
+      title={text} // native browser tooltip
     >
       ⓘ
     </span>
@@ -21,12 +30,14 @@ function InfoTooltip({ text }) {
 
 export default function TripForm({ boat, onSaveTrip }) {
   const [inputs, setInputs] = useState({
+    species: "cod", // ✅ NEW (top row)
     fuel_L: "",
     catch_kg: "",
     lube_L: "",
     coolant_type: "R717", // "R717" | "R744"
-    coolant_L: "",        // liters added this trip
+    coolant_L: "", // liters added this trip
   });
+
   const [result, setResult] = useState(null);
 
   const controlStyle = {
@@ -59,8 +70,13 @@ export default function TripForm({ boat, onSaveTrip }) {
 
   const onSave = () => {
     if (!boat || !result) return;
+
     const trip = {
       dateIso: new Date().toISOString(),
+
+      // ✅ store species on trip (chart uses this)
+      species: inputs.species || "unknown",
+
       fuel: inputs.fuel_L,
       lubricant: inputs.lube_L ? `${inputs.lube_L} L` : "",
       coolant_type: inputs.coolant_type,
@@ -68,10 +84,12 @@ export default function TripForm({ boat, onSaveTrip }) {
       catch: inputs.catch_kg,
       ...result,
     };
+
     onSaveTrip(trip);
 
     // reset fields
     setInputs({
+      species: "cod",
       fuel_L: "",
       catch_kg: "",
       lube_L: "",
@@ -85,6 +103,26 @@ export default function TripForm({ boat, onSaveTrip }) {
     <div className="card">
       <h2>Trip Data {boat ? `(Boat: ${boat.name})` : "(Add a boat to begin)"}</h2>
 
+      {/* ✅ Species as first line (full width) */}
+      <div style={{ marginBottom: "1rem" }}>
+        <label style={{ display: "block" }}>
+          <span>Species</span>
+          <select
+            name="species"
+            value={inputs.species}
+            onChange={onChange}
+            style={controlStyle}
+          >
+            {SPECIES_OPTIONS.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.label}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+
+      {/* Rest in grid */}
       <div className="grid">
         <label>
           <span>Fuel (L)</span>
@@ -112,7 +150,7 @@ export default function TripForm({ boat, onSaveTrip }) {
           />
         </label>
 
-         <label>
+        <label>
           <span>Coolant type</span>
           <select
             name="coolant_type"
@@ -125,9 +163,10 @@ export default function TripForm({ boat, onSaveTrip }) {
           </select>
         </label>
 
-          <label>
-          <span>Coolant (L)
-            <InfoTooltip text="Lubricant is normally replenished periodically rather than per trip. Enter the estimated amount attributable to this trip"/>
+        <label>
+          <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+            Coolant (L)
+            <InfoTooltip text="Coolant additions occur intermittently and not necessarily per trip. Enter the estimated amount allocated to this trip." />
           </span>
           <input
             type="number"
@@ -141,9 +180,10 @@ export default function TripForm({ boat, onSaveTrip }) {
           />
         </label>
 
-      <label>
-          <span>Lubricant (L)
-              <InfoTooltip text="Coolant additions occur intermittently and not necessarily per trip. Enter the estimated amount allocated to this trip." />
+        <label>
+          <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+            Lubricant (L)
+            <InfoTooltip text="Lubricant is normally replenished periodically rather than per trip. Enter the estimated amount attributable to this trip." />
           </span>
           <input
             type="number"
@@ -156,7 +196,6 @@ export default function TripForm({ boat, onSaveTrip }) {
             style={controlStyle}
           />
         </label>
-
       </div>
 
       <div className="row">
@@ -206,6 +245,7 @@ function Badge({ children, tone = "success" }) {
     warn: { background: "#fff7ed", color: "#9a3412", border: "1px solid #fed7aa" },
     neutral: { background: "#f3f4f6", color: "#374151", border: "1px solid #e5e7eb" },
   }[tone];
+
   return (
     <span
       style={{

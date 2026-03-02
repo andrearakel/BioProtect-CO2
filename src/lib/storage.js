@@ -1,3 +1,4 @@
+// src/lib/storage.js
 const BOATS_KEY = "boats";
 const SELECTED_BOAT_KEY = "selectedBoatId";
 
@@ -5,8 +6,18 @@ export function loadBoats() {
   try {
     const raw = localStorage.getItem(BOATS_KEY);
     if (!raw) return [];
+
     const arr = JSON.parse(raw);
-    return Array.isArray(arr) ? arr : [];
+    if (!Array.isArray(arr)) return [];
+
+    // ✅ Normalize: ensure every trip has a species (backwards compatible)
+    return arr.map((boat) => ({
+      ...boat,
+      trips: (boat.trips || []).map((trip) => ({
+        ...trip,
+        species: trip.species ?? "unknown",
+      })),
+    }));
   } catch {
     return [];
   }
