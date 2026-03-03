@@ -46,35 +46,45 @@ body {
 
 /* ---------- Responsive content grid ---------- */
 .content {
-  width: min(var(--content-max), 100% - 2rem);
+  width: min(var(--content-max), calc(100% - 2rem)); /* ✅ FIXED */
   margin: 1rem auto 2rem;
-  display: grid; gap: 1rem; align-items: start;
-  grid-template-columns: 1.15fr 1fr; /* left | right */
+  display: grid;
+  gap: 1rem;
+  align-items: start;
+
+  /* ✅ shrink-safe grid tracks */
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); /* left | right */
 }
 
 /* wider screens breathe more */
 @media (min-width: 1600px) {
   :root { --content-max: 1600px; }
-  .content { grid-template-columns: 1.3fr 1fr; gap: 1.25rem; }
+  .content { grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 1.25rem; }
 }
 
 /* equal columns around 1200px */
 @media (max-width: 1200px) {
-  .content { grid-template-columns: 1fr 1fr; }
+  .content { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
 }
 
 /* stack on tablets/phones */
 @media (max-width: 900px) {
-  .content { grid-template-columns: 1fr; }
+  .content { grid-template-columns: minmax(0, 1fr); }
+  .right { position: static; } /* ✅ sticky off when stacked */
 }
 
 /* column helpers */
 .left, .right { min-width: 0; display: grid; gap: 1rem; }
-.right { position: sticky; top: 64px; height: fit-content; }
+
+/* ✅ keep chart in its own stacking context so it doesn't "fight" left column */
+.right { position: sticky; top: 64px; height: fit-content; z-index: 2; }
+.left { position: relative; z-index: 1; }
 
 /* ---------- Cards ---------- */
 .card {
-  background: var(--card); border-radius: 2rem; padding: 1rem;
+  background: var(--card);
+  border-radius: 2rem;
+  padding: 1rem;
   box-shadow: 0 2px 16px rgba(0,0,0,.06);
   border: 1px solid #e5e7eb;
   overflow: visible;
@@ -88,40 +98,64 @@ body {
 
 label span { display: block; font-size: .85rem; color: var(--muted); margin-bottom: .25rem; }
 input, select {
-  width: 100%; padding: .55rem .6rem; border: 1px solid #e5e7eb; border-radius: .5rem; background: #fff;
-  font-size: 14px; height: 38px; outline: none;
+  width: 100%;
+  padding: .55rem .6rem;
+  border: 1px solid #e5e7eb;
+  border-radius: .5rem;
+  background: #fff;
+  font-size: 14px;
+  height: 38px;
+  outline: none;
 }
 .row { margin-top: 1rem; display: flex; gap: .7rem; flex-wrap: wrap; }
 button {
-  background: var(--accent); color: #fff; border: none;
-  padding: .55rem .8rem; border-radius: .5rem; cursor: pointer; font-size: 18px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  padding: .55rem .8rem;
+  border-radius: .5rem;
+  cursor: pointer;
+  font-size: 18px;
 }
 button:disabled { opacity: .6; cursor: not-allowed; }
 
 /* ---------- Table: scroll inside card, sticky header ---------- */
 .table-wrap {
   max-height: 420px; /* make list long but contained */
-  overflow: auto; border: 1px solid #eef2f7; border-radius: .5rem;
+  overflow: auto;
+  border: 1px solid #eef2f7;
+  border-radius: .5rem;
 }
 table { width: 100%; border-collapse: collapse; table-layout: fixed; }
 th, td {
-  border-bottom: 1px solid #e5e7eb; padding: .5rem .6rem; text-align: center; font-size: .9rem;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  border-bottom: 1px solid #e5e7eb;
+  padding: .5rem .6rem;
+  text-align: center;
+  font-size: .9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 thead th {
-  position: sticky; top: 0; background: var(--card); z-index: 1;
+  position: sticky;
+  top: 0;
+  background: var(--card);
+  z-index: 1;
 }
 
 /* ---------- Recharts tweaks ---------- */
+/* ✅ keep tooltip above everything without creating huge overflow layers */
+.recharts-tooltip-wrapper { z-index: 9999; }
+/* You can keep overflow visible, but it's safer to only elevate the tooltip */
 .recharts-wrapper, .recharts-surface { overflow: visible; }
 
 /* --------------- Results box ------- */
 .result-box {
-  margin-top: 1.25rem;        /* more breathing room under the buttons */
-  background: #f9fbfa;        /* subtle background (light grey) */
+  margin-top: 1.25rem;
+  background: #f9fbfa;
   padding: 1rem;
   border-radius: .75rem;
-  border: 1px solid #21884c;  /* thin border */
+  border: 1px solid #21884c;
 }
 
 .result-row {

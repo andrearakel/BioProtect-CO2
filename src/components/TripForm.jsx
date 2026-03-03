@@ -1,5 +1,5 @@
 // src/components/TripForm.jsx
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { calculateEmissions } from "../lib/calc";
 
 /** 5 common Iceland fisheries species (practical defaults for the app) */
@@ -21,22 +21,33 @@ function InfoTooltip({ text }) {
         fontSize: 13,
         lineHeight: "1",
       }}
-      title={text} // native browser tooltip
+      title={text}
     >
       ⓘ
     </span>
   );
 }
 
+function toNumOrNull(v) {
+  if (v === "" || v == null) return null;
+  // allow comma decimals just in case (some keyboards/browsers)
+  const s = String(v).replace(",", ".");
+  const n = Number(s);
+  return Number.isFinite(n) ? n : null;
+}
+
 export default function TripForm({ boat, onSaveTrip }) {
   const [inputs, setInputs] = useState({
-    species: "cod", // ✅ NEW (top row)
     fuel_L: "",
-    catch_kg: "",
     lube_L: "",
     coolant_type: "R717", // "R717" | "R744"
-    coolant_L: "", // liters added this trip
+    coolant_L: "",
   });
+
+  // ✅ NEW: catch split by species (Option 2)
+  const [speciesBreakdown, setSpeciesBreakdown] = useState([
+    { species: "cod", catchKg: "" },
+  ]);
 
   const [result, setResult] = useState(null);
 
@@ -50,38 +61,86 @@ export default function TripForm({ boat, onSaveTrip }) {
     outline: "none",
   };
 
-  const onChange = (e) =>
-    setInputs((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  const totalCatchKg = useMemo(() => {
+    const sum = speciesBreakdown.reduce((acc, row) => {
+      const n = toNumOrNull(row.catchKg);
+      return acc + (n && n > 0 ? n : 0);
+    }, 0);
+    return sum;
+  }, [speciesBreakdown]);
 
-  const num = (v) => (v === "" || v == null ? null : Number(v));
+  // Any change invalidates the current result (prevents saving stale calculations)
+  const invalidate = () => setResult(null);
+
+  const onChange = (e) => {
+    const { name, value } = e.target;
+    setInputs((prev) => ({ ...prev, [name]: value }));
+    invalidate();
+  };
+
+  const updateRow = (idx, patch) => {
+    setSpeciesBreakdown((prev) => {
+      const next = prev.map((r, i) => (i === idx ? { ...r, ...patch } : r));
+      return next;
+    });
+    invalidate();
+  };
+
+  const addRow = () => {
+    setSpeciesBreakdown((prev) => [...prev, { species: "cod", catchKg: "" }]);
+    invalidate();
+  };
+
+  const removeRow = (idx) => {
+    setSpeciesBreakdown((prev) => {
+      const next = prev.filter((_, i) => i !== idx);
+      return next.length ? next : [{ species: "cod", catchKg: "" }];
+    });
+    invalidate();
+  };
+
+  const canCalculate = boat && totalCatchKg > 0;
 
   const onCalculate = () => {
-    const r = calculateEmissions({
-      fuel_L: num(inputs.fuel_L),
-      catch_kg: num(inputs.catch_kg),
-      lube_L: inputs.lube_L === "" ? null : num(inputs.lube_L),
+    if (!canCalculate) return;
 
-      // IMPORTANT: liters-based cooling (handled in calc.js with placeholders 0.147 / 0.219 per L)
+    const r = calculateEmissions({
+      fuel_L: toNumOrNull(inputs.fuel_L),
+      catch_kg: totalCatchKg,
+      lube_L: inputs.lube_L === "" ? null : toNumOrNull(inputs.lube_L),
       coolant_type: inputs.coolant_type,
-      coolant_L: inputs.coolant_L === "" ? null : num(inputs.coolant_L),
+      coolant_L: inputs.coolant_L === "" ? null : toNumOrNull(inputs.coolant_L),
     });
+
     setResult(r);
   };
 
   const onSave = () => {
     if (!boat || !result) return;
 
+    const cleanedBreakdown = speciesBreakdown
+      .map((r) => ({
+        species: r.species || "unknown",
+        catchKg: toNumOrNull(r.catchKg) || 0,
+      }))
+      .filter((r) => r.catchKg > 0);
+
     const trip = {
       dateIso: new Date().toISOString(),
 
-      // ✅ store species on trip (chart uses this)
-      species: inputs.species || "unknown",
+      // ✅ NEW: store catch split (client requirement)
+      speciesBreakdown: cleanedBreakdown,
 
+      // ✅ total catch derived from split (single source of truth)
+      catch: totalCatchKg,
+
+      // inputs kept for history / transparency
       fuel: inputs.fuel_L,
       lubricant: inputs.lube_L ? `${inputs.lube_L} L` : "",
       coolant_type: inputs.coolant_type,
-      coolant_L: inputs.coolant_L === "" ? 0 : Number(inputs.coolant_L),
-      catch: inputs.catch_kg,
+      coolant_L: inputs.coolant_L === "" ? 0 : Number(String(inputs.coolant_L).replace(",", ".")),
+
+      // calculated outputs
       ...result,
     };
 
@@ -89,13 +148,12 @@ export default function TripForm({ boat, onSaveTrip }) {
 
     // reset fields
     setInputs({
-      species: "cod",
       fuel_L: "",
-      catch_kg: "",
       lube_L: "",
       coolant_type: "R717",
       coolant_L: "",
     });
+    setSpeciesBreakdown([{ species: "cod", catchKg: "" }]);
     setResult(null);
   };
 
@@ -103,103 +161,162 @@ export default function TripForm({ boat, onSaveTrip }) {
     <div className="card">
       <h2>Trip Data {boat ? `(Boat: ${boat.name})` : "(Add a boat to begin)"}</h2>
 
-      {/* ✅ Species as first line (full width) */}
+      {/* ✅ Catch split by species (top) */}
       <div style={{ marginBottom: "1rem" }}>
-        <label style={{ display: "block" }}>
-          <span>Species</span>
-          <select
-            name="species"
-            value={inputs.species}
-            onChange={onChange}
-            style={controlStyle}
-          >
-            {SPECIES_OPTIONS.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.label}
-              </option>
-            ))}
-          </select>
-        </label>
+        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12 }}>
+          <div style={{ fontWeight: 600 }}>
+            Catch split by species{" "}
+            <span style={{ fontWeight: 400, color: "#6b7280", fontSize: 12 }}>
+              (kg per species)
+            </span>
+          </div>
+
+          <div style={{ color: "#6b7280", fontSize: 12 }}>
+            Total catch: <strong>{totalCatchKg ? totalCatchKg.toFixed(1) : "0.0"} kg</strong>
+          </div>
+        </div>
+
+        <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
+          {speciesBreakdown.map((row, idx) => (
+            <div
+              key={idx}
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 140px 44px",
+                gap: 8,
+                alignItems: "center",
+              }}
+            >
+              <select
+                value={row.species}
+                onChange={(e) => updateRow(idx, { species: e.target.value })}
+                style={controlStyle}
+              >
+                {SPECIES_OPTIONS.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.label}
+                  </option>
+                ))}
+              </select>
+
+              <input
+                type="number"
+                inputMode="decimal"
+                min="0"
+                step="0.1"
+                placeholder="kg"
+                value={row.catchKg}
+                onChange={(e) => updateRow(idx, { catchKg: e.target.value })}
+                style={controlStyle}
+              />
+
+              <button
+                type="button"
+                onClick={() => removeRow(idx)}
+                title="Remove species"
+                style={{
+                  height: 36,
+                  borderRadius: 8,
+                  padding: "0 10px",
+                  border: "1px solid #e5e7eb",
+                  color: "white",
+                  background: "#0f4a9cff",
+                  cursor: "pointer",
+                }}
+              >
+                ✕
+              </button>
+            </div>
+          ))}
+
+          <div>
+            <button
+              type="button"
+              onClick={addRow}
+              style={{
+                height: 32,
+                padding: "0 10px",
+                borderRadius: 8,
+                border: "1px solid #e5e7eb",
+                background: "#0f4a9cff",
+                color: "white",
+                cursor: "pointer",
+                fontSize: 13,
+              }}
+            >
+              + Add species
+            </button>
+          </div>
+        </div>
       </div>
 
-      {/* Rest in grid */}
-      <div className="grid">
-        <label>
-          <span>Fuel (L)</span>
-          <input
-            type="number"
-            name="fuel_L"
-            value={inputs.fuel_L}
-            onChange={onChange}
-            min="0"
-            step="0.1"
-            style={controlStyle}
-          />
-        </label>
+<div className="grid">
+  {/* Row 1 */}
+  <label>
+    <span>Fuel (L)</span>
+    <input
+      type="number"
+      name="fuel_L"
+      value={inputs.fuel_L}
+      onChange={onChange}
+      min="0"
+      step="0.1"
+      style={controlStyle}
+    />
+  </label>
 
-        <label>
-          <span>Catch (kg)</span>
-          <input
-            type="number"
-            name="catch_kg"
-            value={inputs.catch_kg}
-            onChange={onChange}
-            min="0"
-            step="1"
-            style={controlStyle}
-          />
-        </label>
+  <label>
+    <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+      Lubricant (L)
+      <InfoTooltip text="Lubricant is normally replenished periodically rather than per trip. Enter the estimated amount attributable to this trip." />
+    </span>
+    <input
+      type="number"
+      name="lube_L"
+      value={inputs.lube_L}
+      onChange={onChange}
+      min="0"
+      step="0.1"
+      placeholder="liters"
+      style={controlStyle}
+    />
+  </label>
 
-        <label>
-          <span>Coolant type</span>
-          <select
-            name="coolant_type"
-            value={inputs.coolant_type}
-            onChange={onChange}
-            style={controlStyle}
-          >
-            <option value="R717">R717 (Ammonia)</option>
-            <option value="R744">R744 (CO₂)</option>
-          </select>
-        </label>
+  {/* Row 2 */}
+  <label>
+    <span>Coolant type</span>
+    <select
+      name="coolant_type"
+      value={inputs.coolant_type}
+      onChange={onChange}
+      style={controlStyle}
+    >
+      <option value="R717">R717 (Ammonia)</option>
+      <option value="R744">R744 (CO₂)</option>
+    </select>
+  </label>
 
-        <label>
-          <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
-            Coolant (L)
-            <InfoTooltip text="Coolant additions occur intermittently and not necessarily per trip. Enter the estimated amount allocated to this trip." />
-          </span>
-          <input
-            type="number"
-            name="coolant_L"
-            value={inputs.coolant_L}
-            onChange={onChange}
-            min="0"
-            step="0.1"
-            placeholder="liters"
-            style={controlStyle}
-          />
-        </label>
+  <label>
+    <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+      Coolant (L)
+      <InfoTooltip text="Coolant additions occur intermittently and not necessarily per trip. Enter the estimated amount allocated to this trip." />
+    </span>
+    <input
+      type="number"
+      name="coolant_L"
+      value={inputs.coolant_L}
+      onChange={onChange}
+      min="0"
+      step="0.1"
+      placeholder="liters"
+      style={controlStyle}
+    />
+  </label>
+</div>
 
-        <label>
-          <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
-            Lubricant (L)
-            <InfoTooltip text="Lubricant is normally replenished periodically rather than per trip. Enter the estimated amount attributable to this trip." />
-          </span>
-          <input
-            type="number"
-            name="lube_L"
-            value={inputs.lube_L}
-            onChange={onChange}
-            min="0"
-            step="0.1"
-            placeholder="liters"
-            style={controlStyle}
-          />
-        </label>
-      </div>
 
       <div className="row">
-        <button onClick={onCalculate} disabled={!boat}>
+        <button onClick={onCalculate} disabled={!canCalculate}>
           Calculate
         </button>
         <button onClick={onSave} disabled={!result || !boat}>
@@ -209,26 +326,12 @@ export default function TripForm({ boat, onSaveTrip }) {
 
       {result && (
         <div className="result-box">
-          <div
-            style={{
-              display: "flex",
-              gap: "1rem",
-              flexWrap: "wrap",
-              alignItems: "center",
-            }}
-          >
+          <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", alignItems: "center" }}>
             <strong>Totals:</strong>
             <Badge>CO₂ total: {result.totalCO2} kg</Badge>
-            <Badge>CO₂ per kg: {result.co2PerKg} kg/kg</Badge>
+            <Badge>CO₂ per kg: {result.co2PerKg ?? "—"} kg/kg</Badge>
           </div>
-          <div
-            style={{
-              marginTop: ".5rem",
-              display: "flex",
-              gap: "1rem",
-              flexWrap: "wrap",
-            }}
-          >
+          <div style={{ marginTop: ".5rem", display: "flex", gap: "1rem", flexWrap: "wrap" }}>
             <Badge tone="neutral">Diesel: {result.dieselCO2} kg</Badge>
             <Badge tone="neutral">Lube: {result.lubeCO2} kg</Badge>
             <Badge tone="neutral">Cooling: {result.coolingCO2} kg</Badge>
