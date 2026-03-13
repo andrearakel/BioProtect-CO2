@@ -17,10 +17,13 @@ const SPECIES = [
   { id: "cod", label: "Cod", color: "#2563eb" },
   { id: "haddock", label: "Haddock", color: "#10b981" },
   { id: "saithe", label: "Saithe", color: "#f59e0b" },
-  { id: "golden_redfish", label: "Golden redfish", color: "#ef4444" },
+  { id: "redfish", label: "Redfish", color: "#ef4444" },
+  { id: "other", label: "Other", color: "#6b7280" },
   { id: "herring", label: "Herring", color: "#8b5cf6" },
+  { id: "blue_whiting", label: "Blue Whiting", color: "#06b6d4" },
+  { id: "mackerel", label: "Mackerel", color: "#84cc16" },
+  { id: "capelin", label: "Capelin", color: "#f97316" },
 ];
-
 const SPECIES_LABELS = Object.fromEntries(SPECIES.map((s) => [s.id, s.label]));
 
 const nf2 = new Intl.NumberFormat("is-IS", {
@@ -182,9 +185,9 @@ export default function CO2Chart({ trips = [] }) {
 
         // However, if shares include species not in SPECIES, the stacked sum would be < Total.
         // To keep the stack equal to Total, we add "other_part" if needed.
-        const knownShare = SPECIES.reduce((acc, s) => acc + (shares[s.id] || 0), 0);
-        const otherShare = Math.max(0, 1 - knownShare);
-        parts.other_part = otherShare * totalPerKg;
+const knownShare = SPECIES.reduce((acc, s) => acc + (shares[s.id] || 0), 0);
+const unknownShare = Math.max(0, 1 - knownShare);
+parts.unknown_part = unknownShare * totalPerKg;
 
         return {
           xKey: `${dateOnly}|${timeOnly}`,
@@ -282,14 +285,14 @@ export default function CO2Chart({ trips = [] }) {
             ))}
 
             {/* Keep stack matching Total if "other" species present */}
-            <Bar
-              dataKey="other_part"
-              name="Other"
-              stackId="a"
-              fill="#6b7280"
-              radius={[6, 6, 0, 0]}
-              isAnimationActive={false}
-            />
+<Bar
+  dataKey="unknown_part"
+  name="Unknown"
+  stackId="a"
+  fill="#9ca3af"
+  radius={[6, 6, 0, 0]}
+  isAnimationActive={false}
+/>
           </BarChart>
         </ResponsiveContainer>
       </div>

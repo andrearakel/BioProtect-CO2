@@ -3,8 +3,12 @@ const SPECIES_LABELS = {
   cod: "Cod",
   haddock: "Haddock",
   saithe: "Saithe",
-  golden_redfish: "Golden redfish",
+  redfish: "Redfish",
+  other: "Other",
   herring: "Herring",
+  blue_whiting: "Blue Whiting",
+  mackerel: "Mackerel",
+  capelin: "Capelin",
   unknown: "Unknown",
 };
 

@@ -7,8 +7,12 @@ const SPECIES_OPTIONS = [
   { id: "cod", label: "Cod" },
   { id: "haddock", label: "Haddock" },
   { id: "saithe", label: "Saithe" },
-  { id: "golden_redfish", label: "Golden redfish" },
+  { id: "redfish", label: "Redfish" },
+  { id: "other", label: "Other" },
   { id: "herring", label: "Herring" },
+  { id: "blue_whiting", label: "Blue Whiting" },
+  { id: "mackerel", label: "Mackerel" },
+  { id: "capelin", label: "Capelin" },
 ];
 
 function InfoTooltip({ text }) {
