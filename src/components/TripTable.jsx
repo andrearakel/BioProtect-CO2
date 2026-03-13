@@ -4,12 +4,12 @@ const SPECIES_LABELS = {
   haddock: "Haddock",
   saithe: "Saithe",
   redfish: "Redfish",
-  other: "Other",
   herring: "Herring",
   blue_whiting: "Blue Whiting",
   mackerel: "Mackerel",
   capelin: "Capelin",
   unknown: "Unknown",
+    other: "Other",
 };
 
 function fmt2(n) {

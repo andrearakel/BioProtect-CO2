@@ -18,11 +18,11 @@ const SPECIES = [
   { id: "haddock", label: "Haddock", color: "#10b981" },
   { id: "saithe", label: "Saithe", color: "#f59e0b" },
   { id: "redfish", label: "Redfish", color: "#ef4444" },
-  { id: "other", label: "Other", color: "#6b7280" },
   { id: "herring", label: "Herring", color: "#8b5cf6" },
   { id: "blue_whiting", label: "Blue Whiting", color: "#06b6d4" },
   { id: "mackerel", label: "Mackerel", color: "#84cc16" },
   { id: "capelin", label: "Capelin", color: "#f97316" },
+    { id: "other", label: "Other", color: "#6b7280" },
 ];
 const SPECIES_LABELS = Object.fromEntries(SPECIES.map((s) => [s.id, s.label]));
 
